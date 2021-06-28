@@ -1,21 +1,18 @@
-﻿@model BulkyBook.Models.Category
+﻿@model BulkyBook.Models.CoverType
 
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
-    var title = "Create Category";
+    var title = "Create Cover Type";
 }
 
 <form method="post">
     <div class="row p-3 border">
-        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-        @* Ovdje chekamo na 0 umjesto na null jer će vrijednost biti defaultana na 0 jer je u pitanju integer *@
-        @if (Model.Id != 0)
-        {
-            // EDIT
-            title = "Edit Category";
-        }
         <div class="col-12 border-bottom">
-            <h2 class="text-primary">@title</h2>
+            @if (Model.Id != 0)
+            {
+                title = "Edit Cover Type";
+            }
+            <h2 class="text-primary text-center">@title</h2>
         </div>
     </div>
     <div class="col-8 pt-4">
