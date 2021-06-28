@@ -1,9 +1,6 @@
 ﻿using BulkyBook.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace BulkyBook.DataAccess.Data
 {
@@ -15,5 +12,6 @@ namespace BulkyBook.DataAccess.Data
         }
 
         public DbSet<Category> Categories { get; set; }
+        public DbSet<CoverType> CoverTypes { get; set; }
     }
 }
