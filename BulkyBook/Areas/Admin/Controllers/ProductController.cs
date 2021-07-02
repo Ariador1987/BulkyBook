@@ -1,18 +1,22 @@
 ﻿using BulkyBook.Models;
 using BulkyBooky.DataAccess.Repository.IRepository;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BulkyBook.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    public class CategoryController : Controller
+    public class ProductController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
+        // ovo nam treba za uploadat slike u root.
+        private readonly IWebHostEnvironment _hostEnvironment;
 
 
-        public CategoryController(IUnitOfWork unitOfWork)
+        public ProductController(IUnitOfWork unitOfWork, IWebHostEnvironment hostEnvironment)
         {
             _unitOfWork = unitOfWork;
+            _hostEnvironment = hostEnvironment;
         }
 
         public IActionResult Index()
@@ -22,38 +26,38 @@ namespace BulkyBook.Areas.Admin.Controllers
 
         public IActionResult Upsert(int? id)
         {
-            var category = new Category();
+            var product = new Product();
             if (id == null)
             {
                 // CREATE
-                return View(category);
+                return View(product);
             }
             // EDIT
-            category = _unitOfWork.Category.Get(id.GetValueOrDefault());
+            product = _unitOfWork.Product.Get(id.GetValueOrDefault());
             // if supplied incorrect ID
-            if (category == null)
+            if (product == null)
             {
                 return NotFound();
             }
 
-            return View(category);
+            return View(product);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Upsert(Category category)
+        public IActionResult Upsert(Product product)
         {
             if (ModelState.IsValid)
             {
                 // CREATE
-                if (category.Id == 0)
+                if (product.Id == 0)
                 {
-                    _unitOfWork.Category.Add(category);
+                    _unitOfWork.Product.Add(product);
                 }
                 else
                 {
                     // U UPDATE CATEGORY REPA METODI POZIVAMO SAVECHANGES / REMOVE-ALI SMO TO , DA BUDEMO CONSISTENT
-                    _unitOfWork.Category.Update(category);
+                    _unitOfWork.Product.Update(product);
                 }
 
                 _unitOfWork.Save();
@@ -62,26 +66,26 @@ namespace BulkyBook.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            return View(category);
+            return View(product);
         }
 
         #region API 
         [HttpGet]
         public IActionResult GetAll()
         {
-            var allObj = _unitOfWork.Category.GetAll();
+            var allObj = _unitOfWork.Product.GetAll();
             return Json(new { data = allObj });
         }
 
         [HttpDelete]
         public IActionResult Delete(int id)
         {
-            var objFromDb = _unitOfWork.Category.Get(id);
+            var objFromDb = _unitOfWork.Product.Get(id);
             if (objFromDb == null)
             {
                 return Json(new { success = false, message = "Error while deleteing" });
             }
-            _unitOfWork.Category.Remove(objFromDb);
+            _unitOfWork.Product.Remove(objFromDb);
             _unitOfWork.Save();
             return Json(new { success = true, message = "Delete Successful" });
         }

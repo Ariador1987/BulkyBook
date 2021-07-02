@@ -15,12 +15,12 @@ namespace BulkyBooky.DataAccess.Repository
             _db = db;
         }
 
-        public void Update(Category category)
+        public void Update(Category product)
         {
-            var objFromDb = _db.Categories.FirstOrDefault(c => c.Id == category.Id);
+            var objFromDb = _db.Categories.FirstOrDefault(c => c.Id == product.Id);
             if (objFromDb != null)
             {
-                objFromDb.Name = category.Name;
+                objFromDb.Name = product.Name;
             }
         }
     }
