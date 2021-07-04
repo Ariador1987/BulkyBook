@@ -1,7 +1,12 @@
 ﻿using BulkyBook.Models;
+using BulkyBook.Models.ViewModels;
 using BulkyBooky.DataAccess.Repository.IRepository;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using System;
+using System.IO;
+using System.Linq;
 
 namespace BulkyBook.Areas.Admin.Controllers
 {
@@ -26,54 +31,116 @@ namespace BulkyBook.Areas.Admin.Controllers
 
         public IActionResult Upsert(int? id)
         {
-            var product = new Product();
+
+
+            ProductVM productVM = new ProductVM()
+            {
+                Product = new Product(),
+                CategoryList = _unitOfWork.Category.GetAll().Select(c => new SelectListItem
+                {
+                    Text = c.Name,
+                    Value = c.Id.ToString()
+                }),
+                CoverTypeList = _unitOfWork.CoverType.GetAll().Select(c => new SelectListItem
+                {
+                    Text = c.Name,
+                    Value = c.Id.ToString()
+                }),
+            };
             if (id == null)
             {
                 // CREATE
-                return View(product);
+                return View(productVM);
             }
             // EDIT
-            product = _unitOfWork.Product.Get(id.GetValueOrDefault());
+            productVM.Product = _unitOfWork.Product.Get(id.GetValueOrDefault());
             // if supplied incorrect ID
-            if (product == null)
+            if (productVM.Product == null)
             {
                 return NotFound();
             }
 
-            return View(product);
+            return View(productVM);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Upsert(Product product)
+        public IActionResult Upsert(ProductVM productVM)
         {
             if (ModelState.IsValid)
             {
-                // CREATE
-                if (product.Id == 0)
+                string webRootPath = _hostEnvironment.WebRootPath;
+                var files = HttpContext.Request.Form.Files;
+                if (files.Count > 0)
                 {
-                    _unitOfWork.Product.Add(product);
+                    string fileName = Guid.NewGuid().ToString();
+                    var uploads = Path.Combine(webRootPath, @"images\products");
+                    var extenstion = Path.GetExtension(files[0].FileName);
+
+                    if (productVM.Product.ImageUrl != null)
+                    {
+                        //this is an edit and we need to remove old image
+                        var imagePath = Path.Combine(webRootPath, productVM.Product.ImageUrl.TrimStart('\\'));
+                        if (System.IO.File.Exists(imagePath))
+                        {
+                            System.IO.File.Delete(imagePath);
+                        }
+                    }
+                    using (var filesStreams = new FileStream(Path.Combine(uploads, fileName + extenstion), FileMode.Create))
+                    {
+                        files[0].CopyTo(filesStreams);
+                    }
+                    productVM.Product.ImageUrl = @"\images\products\" + fileName + extenstion;
                 }
                 else
                 {
-                    // U UPDATE CATEGORY REPA METODI POZIVAMO SAVECHANGES / REMOVE-ALI SMO TO , DA BUDEMO CONSISTENT
-                    _unitOfWork.Product.Update(product);
+                    //update when they do not change the image
+                    if (productVM.Product.Id != 0)
+                    {
+                        Product objFromDb = _unitOfWork.Product.Get(productVM.Product.Id);
+                        productVM.Product.ImageUrl = objFromDb.ImageUrl;
+                    }
+                }
+
+
+                if (productVM.Product.Id == 0)
+                {
+                    _unitOfWork.Product.Add(productVM.Product);
+
+                }
+                else
+                {
+                    _unitOfWork.Product.Update(productVM.Product);
                 }
 
                 _unitOfWork.Save();
-                // DA BI IZBJEGLI MAGIC STRING VRACANJE
-                // return RedirectToAction("Index");
                 return RedirectToAction(nameof(Index));
             }
-
-            return View(product);
+            else
+            {
+                productVM.CategoryList = _unitOfWork.Category.GetAll().Select(i => new SelectListItem
+                {
+                    Text = i.Name,
+                    Value = i.Id.ToString()
+                });
+                productVM.CoverTypeList = _unitOfWork.CoverType.GetAll().Select(i => new SelectListItem
+                {
+                    Text = i.Name,
+                    Value = i.Id.ToString()
+                });
+                if (productVM.Product.Id != 0)
+                {
+                    productVM.Product = _unitOfWork.Product.Get(productVM.Product.Id);
+                }
+            }
+            return View(productVM);
         }
 
         #region API 
         [HttpGet]
         public IActionResult GetAll()
         {
-            var allObj = _unitOfWork.Product.GetAll();
+            var allObj = _unitOfWork.Product.GetAll(includeProperties: "Category,CoverType");
             return Json(new { data = allObj });
         }
 
